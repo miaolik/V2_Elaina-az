@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.SiteHub" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">@color/teal_700</item>
+        <item name="android:navigationBarColor">@android:color/white</item>
+    </style>
+</resources>
