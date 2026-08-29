@@ -2,6 +2,7 @@ package com.miaolik.sitehub
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
@@ -13,8 +14,10 @@ import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.ValueCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import android.widget.FrameLayout
@@ -32,6 +35,18 @@ class WebActivity : AppCompatActivity() {
     private lateinit var progress: android.widget.ProgressBar
     private val windows = mutableListOf<BrowserWindow>()
     private var activeWindow: BrowserWindow? = null
+    private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
+    private val filePicker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val selectedUris = when {
+            result.resultCode != RESULT_OK || result.data == null -> null
+            result.data?.clipData != null -> Array(result.data!!.clipData!!.itemCount) { index ->
+                result.data!!.clipData!!.getItemAt(index).uri
+            }
+            else -> result.data?.data?.let(::arrayOf)
+        }
+        fileChooserCallback?.onReceiveValue(selectedUris)
+        fileChooserCallback = null
+    }
 
     private data class BrowserWindow(val webView: WebView, var title: String)
     private data class PickerItem(val title: String, val detail: String, val selected: Boolean)
@@ -141,6 +156,26 @@ class WebActivity : AppCompatActivity() {
                 return true
             }
 
+            override fun onShowFileChooser(
+                webView: WebView,
+                filePathCallback: ValueCallback<Array<Uri>>,
+                fileChooserParams: FileChooserParams,
+            ): Boolean {
+                fileChooserCallback?.onReceiveValue(null)
+                fileChooserCallback = filePathCallback
+                val pickerIntent = fileChooserParams.createIntent().apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                }
+                return try {
+                    filePicker.launch(Intent.createChooser(pickerIntent, "选择文件"))
+                    true
+                } catch (_: Exception) {
+                    fileChooserCallback?.onReceiveValue(null)
+                    fileChooserCallback = null
+                    false
+                }
+            }
+
             override fun onCloseWindow(webView: WebView) {
                 windows.firstOrNull { it.webView == webView }?.let(::closeWindow)
             }
@@ -223,6 +258,8 @@ class WebActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        fileChooserCallback?.onReceiveValue(null)
+        fileChooserCallback = null
         windows.forEach { it.webView.destroy() }
         windows.clear()
         super.onDestroy()
