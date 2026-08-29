@@ -18,7 +18,7 @@ class SiteListActivity : AppCompatActivity() {
         setContentView(R.layout.activity_site_list)
         openedDefault = savedInstanceState?.getBoolean("opened_default", false) ?: false
         store = SiteStore(this)
-        adapter = SiteAdapter(store.sites(), ::openSite, ::showSiteDialog)
+        adapter = SiteAdapter(store.sitesSorted(), ::openSite, ::showSiteDialog)
         findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.siteList).apply {
             layoutManager = LinearLayoutManager(this@SiteListActivity)
             adapter = this@SiteListActivity.adapter
@@ -40,7 +40,7 @@ class SiteListActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        adapter.submit(store.sites())
+        adapter.submit(store.sitesSorted())
     }
 
     private fun openSite(site: Site) {

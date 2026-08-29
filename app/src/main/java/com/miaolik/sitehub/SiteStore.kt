@@ -25,6 +25,8 @@ class SiteStore(context: Context) {
 
     fun defaultSite(): Site? = sites().firstOrNull { it.isDefault }
 
+    fun sitesSorted(): List<Site> = sites().sortedWith(compareByDescending<Site> { it.isDefault }.thenBy { it.name.lowercase() })
+
     private fun persist(sites: List<Site>) {
         val array = JSONArray()
         sites.forEach { array.put(it.toJson()) }
