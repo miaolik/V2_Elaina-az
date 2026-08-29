@@ -11,8 +11,8 @@ android {
         applicationId = "com.miaolik.sitehub"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.2.0"
+        versionCode = 4
+        versionName = "1.3.0"
     }
 
     compileOptions {
@@ -23,6 +23,28 @@ android {
 
 kotlin {
     jvmToolchain(17)
+}
+
+val releaseKeystorePath = providers.environmentVariable("ANDROID_KEYSTORE_PATH").orNull
+
+android.signingConfigs {
+    create("release") {
+        if (releaseKeystorePath != null) {
+            storeFile = file(releaseKeystorePath)
+            storePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").orNull
+            keyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS").orNull
+            keyPassword = providers.environmentVariable("ANDROID_KEY_PASSWORD").orNull
+        }
+    }
+}
+
+android.buildTypes {
+    getByName("release") {
+        isMinifyEnabled = false
+        if (releaseKeystorePath != null) {
+            signingConfig = signingConfigs.getByName("release")
+        }
+    }
 }
 
 dependencies {
