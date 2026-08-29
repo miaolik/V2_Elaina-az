@@ -38,21 +38,25 @@ class WebActivity : AppCompatActivity() {
         site = SiteStore(this).sites().firstOrNull { it.id == intent.getStringExtra(EXTRA_SITE_ID) } ?: run {
             finish(); return
         }
-        findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.backButton)
+        val backButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.backButton)
+        backButton
             .setOnClickListener { onBackPressedDispatcher.onBackPressed() }
 
         val switchSiteButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.switchSiteButton)
+        val windowButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.windowButton)
         val refreshButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.refreshButton)
         val clearCacheButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.clearCacheButton)
         val clearLoginButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.clearLoginButton)
         fun toggleDrawer() {
             val visibility = if (switchSiteButton.visibility == View.VISIBLE) View.GONE else View.VISIBLE
-            listOf(switchSiteButton, refreshButton, clearCacheButton, clearLoginButton).forEach { it.visibility = visibility }
+            listOf(backButton, windowButton, switchSiteButton, refreshButton, clearCacheButton, clearLoginButton).forEach { it.visibility = visibility }
         }
         findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.menuButton)
             .setOnClickListener { toggleDrawer() }
         switchSiteButton
             .setOnClickListener { showSitePicker() }
+        windowButton
+            .setOnClickListener { showWindowPicker() }
         refreshButton
             .setOnClickListener { activeWindow?.webView?.reload() }
         clearCacheButton
@@ -172,7 +176,17 @@ class WebActivity : AppCompatActivity() {
         if (activeIndex >= 0) {
             windowTabs.post { windowTabScroller.smoothScrollTo(activeIndex * 164, 0) }
         }
-        windowTabScroller.visibility = if (windows.size > 1) View.VISIBLE else View.GONE
+        windowTabScroller.visibility = View.VISIBLE
+    }
+
+    private fun showWindowPicker() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("切换窗口")
+            .setItems(windows.mapIndexed { index, window -> "${index + 1}. ${window.title}" }.toTypedArray()) { _, which ->
+                switchTo(windows[which])
+            }
+            .setNegativeButton("关闭", null)
+            .show()
     }
 
     override fun onDestroy() {
