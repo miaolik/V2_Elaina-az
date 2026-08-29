@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
@@ -31,6 +33,7 @@ class WebActivity : AppCompatActivity() {
     private var activeWindow: BrowserWindow? = null
 
     private data class BrowserWindow(val webView: WebView, var title: String)
+    private data class PickerItem(val title: String, val detail: String, val selected: Boolean)
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -195,13 +198,13 @@ class WebActivity : AppCompatActivity() {
     }
 
     private fun showWindowPicker() {
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("切换窗口")
-            .setItems(windows.mapIndexed { index, window -> "${index + 1}. ${window.title}" }.toTypedArray()) { _, which ->
-                switchTo(windows[which])
-            }
-            .setNegativeButton("关闭", null)
-            .show()
+        showPicker(
+            title = "切换窗口",
+            subtitle = "选择要继续浏览的页面",
+            items = windows.mapIndexed { index, window ->
+                PickerItem("窗口 ${index + 1}", window.title, window == activeWindow)
+            },
+        ) { index -> switchTo(windows[index]) }
     }
 
     override fun onDestroy() {
@@ -212,15 +215,97 @@ class WebActivity : AppCompatActivity() {
 
     private fun showSitePicker() {
         val sites = SiteStore(this).sitesSorted()
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("切换网站")
-            .setItems(sites.map { if (it.id == site.id) "当前：${it.name}" else it.name }.toTypedArray()) { _, which ->
-                if (sites[which].id != site.id) {
-                    site = sites[which]
-                    createWindow(site.url(), site.name)
-                }
+        showPicker(
+            title = "切换网站",
+            subtitle = "选择一个站点并在新窗口中打开",
+            items = sites.map { candidate ->
+                PickerItem(candidate.name, candidate.url(), candidate.id == site.id)
+            },
+        ) { index ->
+            val selectedSite = sites[index]
+            if (selectedSite.id != site.id) {
+                site = selectedSite
+                createWindow(site.url(), site.name)
             }
-            .setNegativeButton("关闭", null)
-            .show()
+        }
+    }
+
+    private fun showPicker(
+        title: String,
+        subtitle: String,
+        items: List<PickerItem>,
+        onSelect: (Int) -> Unit,
+    ) {
+        val content = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(18), dp(20), dp(16))
+            background = roundedBackground("#151A23", "#303B4D", 22)
+        }
+        val heading = TextView(this).apply {
+            text = title
+            setTextColor(Color.WHITE)
+            textSize = 20f
+        }
+        val description = TextView(this).apply {
+            text = subtitle
+            setTextColor(Color.parseColor("#9EACBF"))
+            textSize = 13f
+            setPadding(0, dp(4), 0, dp(16))
+        }
+        val list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        lateinit var dialog: androidx.appcompat.app.AlertDialog
+        content.addView(heading)
+        content.addView(description)
+        items.forEachIndexed { index, item ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(16), dp(12), dp(16), dp(12))
+                background = roundedBackground(
+                    if (item.selected) "#29364A" else "#202836",
+                    if (item.selected) "#65799B" else "#303B4D",
+                    14,
+                )
+                isClickable = true
+                isFocusable = true
+            }
+            val rowTitle = TextView(this).apply {
+                text = if (item.selected) "${item.title}  当前" else item.title
+                setTextColor(Color.WHITE)
+                textSize = 16f
+                maxLines = 1
+            }
+            val rowDetail = TextView(this).apply {
+                text = item.detail
+                setTextColor(Color.parseColor("#AAB7C9"))
+                textSize = 12f
+                maxLines = 1
+                setPadding(0, dp(4), 0, 0)
+            }
+            row.addView(rowTitle)
+            row.addView(rowDetail)
+            list.addView(row, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                if (index > 0) topMargin = dp(8)
+            })
+            row.setOnClickListener {
+                dialog.dismiss()
+                onSelect(index)
+            }
+        }
+        content.addView(list)
+        dialog = androidx.appcompat.app.AlertDialog.Builder(this).setView(content).create()
+        dialog.setOnShowListener {
+            dialog.window?.apply {
+                setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                decorView.setPadding(dp(16), 0, dp(16), 0)
+            }
+        }
+        dialog.show()
+    }
+
+    private fun roundedBackground(fillColor: String, strokeColor: String, radius: Int) = GradientDrawable().apply {
+        setColor(Color.parseColor(fillColor))
+        setStroke(dp(1), Color.parseColor(strokeColor))
+        cornerRadius = dp(radius).toFloat()
     }
 }
