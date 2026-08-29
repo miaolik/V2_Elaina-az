@@ -17,7 +17,6 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
-import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 
@@ -108,7 +107,7 @@ class WebActivity : AppCompatActivity() {
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     @SuppressLint("SetJavaScriptEnabled")
-    private fun createWindow(url: String, initialTitle: String): BrowserWindow {
+    private fun createWindow(url: String?, initialTitle: String): BrowserWindow {
         val view = WebView(this)
         view.layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         view.settings.javaScriptEnabled = true
@@ -132,8 +131,9 @@ class WebActivity : AppCompatActivity() {
             }
 
             override fun onCreateWindow(webView: WebView, isDialog: Boolean, isUserGesture: Boolean, resultMsg: android.os.Message): Boolean {
-                val child = createWindow("about:blank", "新窗口")
-                (resultMsg.obj as WebView.WebViewTransport).webView = child.webView
+                val transport = resultMsg.obj as? WebView.WebViewTransport ?: return false
+                val child = createWindow(null, "新窗口")
+                transport.webView = child.webView
                 resultMsg.sendToTarget()
                 return true
             }
@@ -145,7 +145,7 @@ class WebActivity : AppCompatActivity() {
         windows += window
         webViewContainer.addView(view)
         switchTo(window)
-        view.loadUrl(url)
+        url?.let(view::loadUrl)
         return window
     }
 
@@ -183,15 +183,7 @@ class WebActivity : AppCompatActivity() {
                 textSize = 12f
                 maxLines = 1
             }
-            val close = ImageButton(this).apply {
-                setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
-                background = getDrawable(R.drawable.bg_window_close)
-                contentDescription = "关闭窗口"
-                setPadding(5, 5, 5, 5)
-                setOnClickListener { closeWindow(window) }
-            }
             tab.addView(label, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            tab.addView(close, LinearLayout.LayoutParams(28, 28))
             val params = LinearLayout.LayoutParams(156, ViewGroup.LayoutParams.WRAP_CONTENT).apply { marginEnd = 8 }
             windowTabs.addView(tab, params)
         }
