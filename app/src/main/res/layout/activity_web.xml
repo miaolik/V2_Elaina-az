@@ -1,5 +1,5 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical">
-    <com.google.android.material.appbar.MaterialToolbar android:id="@+id/webToolbar" android:layout_width="match_parent" android:layout_height="wrap_content" />
-    <ProgressBar android:id="@+id/progress" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="4dp" android:max="100" />
-    <WebView android:id="@+id/webView" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
-</LinearLayout>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="match_parent">
+    <WebView android:id="@+id/webView" android:layout_width="match_parent" android:layout_height="match_parent" />
+    <ProgressBar android:id="@+id/progress" style="?android:attr/progressBarStyleHorizontal" android:layout_width="match_parent" android:layout_height="3dp" android:layout_gravity="top" android:max="100" />
+    <com.google.android.material.button.MaterialButton android:id="@+id/backButton" android:layout_width="48dp" android:layout_height="48dp" android:layout_gravity="top|start" android:layout_marginStart="16dp" android:layout_marginTop="16dp" android:backgroundTint="#EFFFFFFF" android:contentDescription="返回" android:insetTop="0dp" android:insetBottom="0dp" android:minWidth="0dp" android:minHeight="0dp" android:padding="12dp" app:icon="@drawable/ic_back" app:iconGravity="textStart" app:iconPadding="0dp" app:iconSize="24dp" />
+</FrameLayout>
