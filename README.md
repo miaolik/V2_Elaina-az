@@ -17,4 +17,6 @@
 
 生成的调试 APK 位于 `app/build/outputs/apk/debug/app-debug.apk`。发布版本应使用项目所有者的签名密钥生成。
 
+推送到 `main` 后，GitHub Actions 的 `Build Android APK` 工作流会自动生成调试 APK。构建成功后可在对应工作流运行的 Artifacts 中下载 `SiteHub-debug-apk`。
+
 项目允许明文 HTTP 站点访问，因此仅应添加受信任的内网或自有站点。
