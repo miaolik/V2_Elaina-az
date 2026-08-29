@@ -13,6 +13,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageButton
@@ -72,6 +74,7 @@ class WebActivity : AppCompatActivity() {
         windowTabs = findViewById(R.id.windowTabs)
         windowTabScroller = findViewById(R.id.windowTabScroller)
         progress = findViewById(R.id.progress)
+        applyTopSafeArea()
         createWindow(site.url(), site.name)
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -83,6 +86,25 @@ class WebActivity : AppCompatActivity() {
             }
         })
     }
+
+    private fun applyTopSafeArea() {
+        val actionDrawer = findViewById<View>(R.id.actionDrawer)
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content)) { _, insets ->
+            val topInset = insets.getInsets(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout()).top
+            (actionDrawer.layoutParams as ViewGroup.MarginLayoutParams).apply {
+                topMargin = topInset + dp(16)
+                actionDrawer.layoutParams = this
+            }
+            (windowTabScroller.layoutParams as ViewGroup.MarginLayoutParams).apply {
+                topMargin = topInset + dp(64)
+                windowTabScroller.layoutParams = this
+            }
+            insets
+        }
+        ViewCompat.requestApplyInsets(actionDrawer)
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun createWindow(url: String, initialTitle: String): BrowserWindow {
