@@ -23,10 +23,11 @@ class WebActivity : AppCompatActivity() {
             finish(); return
         }
         val toolbar = findViewById<androidx.appcompat.widget.Toolbar>(R.id.webToolbar)
+        setSupportActionBar(toolbar)
         toolbar.title = site.name
         toolbar.setNavigationIcon(androidx.appcompat.R.drawable.abc_ic_ab_back_material)
-        toolbar.setNavigationOnClickListener { finish() }
-        setSupportActionBar(toolbar)
+        toolbar.navigationContentDescription = "返回"
+        toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
 
         CookieManager.getInstance().setAcceptCookie(true)
         webView = findViewById(R.id.webView)

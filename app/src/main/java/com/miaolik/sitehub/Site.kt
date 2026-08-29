@@ -8,8 +8,8 @@ data class Site(
     val name: String,
     val scheme: String = "http://",
     val host: String,
-    val port: String = "",
-    val path: String = "/",
+    val port: String = "5200",
+    val path: String = "/web/",
     val isDefault: Boolean = false,
 ) {
     fun url(): String {
@@ -43,8 +43,8 @@ data class Site(
             name = json.optString("name"),
             scheme = json.optString("scheme", "http://"),
             host = json.optString("host"),
-            port = json.optString("port"),
-            path = json.optString("path", "/"),
+            port = json.optString("port", "5200"),
+            path = json.optString("path", "/web/"),
             isDefault = json.optBoolean("isDefault", false),
         )
     }

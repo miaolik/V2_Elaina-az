@@ -5,17 +5,18 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.textfield.TextInputEditText
 
 class SiteListActivity : AppCompatActivity() {
     private lateinit var store: SiteStore
     private lateinit var adapter: SiteAdapter
+    private var openedDefault = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_site_list)
+        openedDefault = savedInstanceState?.getBoolean("opened_default", false) ?: false
         store = SiteStore(this)
         adapter = SiteAdapter(store.sites(), ::openSite, ::showSiteDialog)
         findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.siteList).apply {
@@ -26,9 +27,15 @@ class SiteListActivity : AppCompatActivity() {
         findViewById<com.google.android.material.button.MaterialButton>(R.id.addButton)
             .setOnClickListener { showSiteDialog(null) }
 
-        if (intent.getBooleanExtra("open_default", true)) {
+        if (!openedDefault && intent.getBooleanExtra("open_default", true)) {
+            openedDefault = true
             store.defaultSite()?.let(::openSite)
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBoolean("opened_default", openedDefault)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onResume() {
