@@ -1,3 +1,7 @@
 <resources>
-    <color name="teal_700">#006C67</color>
+    <color name="indigo_700">#4F46E5</color>
+    <color name="surface_primary">#F8F7FF</color>
+    <color name="surface_card">#FFFFFF</color>
+    <color name="text_muted">#625B71</color>
+    <color name="badge_background">#E8E3FF</color>
 </resources>
