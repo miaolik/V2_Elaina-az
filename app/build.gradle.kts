@@ -42,7 +42,7 @@ android.buildTypes {
     getByName("release") {
         isMinifyEnabled = false
         if (releaseKeystorePath != null) {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = android.signingConfigs.getByName("release")
         }
     }
 }
