@@ -42,7 +42,7 @@ class WebActivity : AppCompatActivity() {
             result.data?.clipData != null -> Array(result.data!!.clipData!!.itemCount) { index ->
                 result.data!!.clipData!!.getItemAt(index).uri
             }
-            else -> result.data?.data?.let(::arrayOf)
+            else -> result.data?.data?.let { uri -> arrayOf(uri) }
         }
         fileChooserCallback?.onReceiveValue(selectedUris)
         fileChooserCallback = null
