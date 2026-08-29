@@ -4,4 +4,8 @@
     <color name="surface_card">#FFFFFF</color>
     <color name="text_muted">#625B71</color>
     <color name="badge_background">#E8E3FF</color>
+    <color name="action_bar_background">#FFFFFF</color>
+    <color name="action_bar_stroke">#D9E0E9</color>
+    <color name="action_button_selected">#DCE8FB</color>
+    <color name="action_icon">#335D9E</color>
 </resources>

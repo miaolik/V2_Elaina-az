@@ -19,6 +19,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
+import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 
@@ -51,12 +52,8 @@ class WebActivity : AppCompatActivity() {
         val refreshButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.refreshButton)
         val clearCacheButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.clearCacheButton)
         val clearLoginButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.clearLoginButton)
-        fun toggleDrawer() {
-            val visibility = if (switchSiteButton.visibility == View.VISIBLE) View.GONE else View.VISIBLE
-            listOf(backButton, windowButton, switchSiteButton, refreshButton, clearCacheButton, clearLoginButton).forEach { it.visibility = visibility }
-        }
         findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.menuButton)
-            .setOnClickListener { toggleDrawer() }
+            .setOnClickListener { showSitePicker() }
         switchSiteButton
             .setOnClickListener { showSitePicker() }
         windowButton
@@ -99,8 +96,13 @@ class WebActivity : AppCompatActivity() {
                 actionDrawer.layoutParams = this
             }
             (windowTabScroller.layoutParams as ViewGroup.MarginLayoutParams).apply {
-                topMargin = topInset + dp(64)
+                topMargin = topInset + dp(8)
                 windowTabScroller.layoutParams = this
+            }
+            (webViewContainer.layoutParams as ViewGroup.MarginLayoutParams).apply {
+                topMargin = topInset + dp(44)
+                bottomMargin = bottomInset + dp(70)
+                webViewContainer.layoutParams = this
             }
             insets
         }
@@ -176,23 +178,38 @@ class WebActivity : AppCompatActivity() {
         windows.forEachIndexed { index, window ->
             val tab = LinearLayout(this).apply {
                 gravity = Gravity.CENTER_VERTICAL
-                setPadding(0, 0, 6, 0)
-                background = getDrawable(if (window == activeWindow) R.drawable.bg_window_tab_active else R.drawable.bg_window_tab)
+                setPadding(dp(8), 0, dp(3), 0)
+                background = roundedBackground(
+                    if (window == activeWindow) "#EDF2FB" else "#F5F7FA",
+                    if (window == activeWindow) "#ABC0E6" else "#D7DEE8",
+                    10,
+                )
                 setOnClickListener { switchTo(window) }
             }
             val label = TextView(this).apply {
-                text = "${index + 1}. ${window.title.take(16)}"
-                setTextColor(Color.rgb(35, 51, 72))
-                textSize = 12f
+                text = if (index == 0) window.title.take(14) else "${index + 1}. ${window.title.take(12)}"
+                setTextColor(Color.rgb(46, 71, 112))
+                textSize = 10f
                 maxLines = 1
             }
-            tab.addView(label, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f))
-            val params = LinearLayout.LayoutParams(156, ViewGroup.LayoutParams.WRAP_CONTENT).apply { marginEnd = 8 }
+            tab.addView(label, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+            if (index > 0) {
+                val close = ImageButton(this).apply {
+                    setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
+                    background = ColorDrawable(Color.TRANSPARENT)
+                    contentDescription = "关闭窗口"
+                    setPadding(dp(3), dp(3), dp(3), dp(3))
+                    setColorFilter(Color.rgb(72, 101, 143))
+                    setOnClickListener { closeWindow(window) }
+                }
+                tab.addView(close, LinearLayout.LayoutParams(dp(18), dp(18)).apply { marginStart = dp(3) })
+            }
+            val params = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(20)).apply { marginEnd = dp(8) }
             windowTabs.addView(tab, params)
         }
         val activeIndex = windows.indexOf(activeWindow)
         if (activeIndex >= 0) {
-            windowTabs.post { windowTabScroller.smoothScrollTo(activeIndex * 164, 0) }
+            windowTabs.post { windowTabScroller.fullScroll(View.FOCUS_RIGHT) }
         }
         windowTabScroller.visibility = View.VISIBLE
     }
