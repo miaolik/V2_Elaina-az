@@ -74,7 +74,7 @@ class WebActivity : AppCompatActivity() {
         windowTabs = findViewById(R.id.windowTabs)
         windowTabScroller = findViewById(R.id.windowTabScroller)
         progress = findViewById(R.id.progress)
-        applyTopSafeArea()
+        applyWindowSafeAreas()
         createWindow(site.url(), site.name)
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -87,12 +87,13 @@ class WebActivity : AppCompatActivity() {
         })
     }
 
-    private fun applyTopSafeArea() {
+    private fun applyWindowSafeAreas() {
         val actionDrawer = findViewById<View>(R.id.actionDrawer)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content)) { _, insets ->
             val topInset = insets.getInsets(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout()).top
+            val bottomInset = insets.getInsets(WindowInsetsCompat.Type.navigationBars() or WindowInsetsCompat.Type.displayCutout()).bottom
             (actionDrawer.layoutParams as ViewGroup.MarginLayoutParams).apply {
-                topMargin = topInset + dp(16)
+                bottomMargin = bottomInset + dp(8)
                 actionDrawer.layoutParams = this
             }
             (windowTabScroller.layoutParams as ViewGroup.MarginLayoutParams).apply {
