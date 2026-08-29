@@ -52,8 +52,6 @@ class WebActivity : AppCompatActivity() {
         val refreshButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.refreshButton)
         val clearCacheButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.clearCacheButton)
         val clearLoginButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.clearLoginButton)
-        findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.menuButton)
-            .setOnClickListener { showSitePicker() }
         switchSiteButton
             .setOnClickListener { showSitePicker() }
         windowButton
