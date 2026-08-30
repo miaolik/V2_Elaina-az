@@ -163,8 +163,19 @@ class WebActivity : AppCompatActivity() {
             ): Boolean {
                 fileChooserCallback?.onReceiveValue(null)
                 fileChooserCallback = filePathCallback
-                val pickerIntent = fileChooserParams.createIntent().apply {
+                val acceptTypes = fileChooserParams.acceptTypes
+                    .filter { it.isNotBlank() }
+                    .toTypedArray()
+                val pickerIntent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
+                    type = if (acceptTypes.size == 1) acceptTypes[0] else "*/*"
+                    if (acceptTypes.size > 1) {
+                        putExtra(Intent.EXTRA_MIME_TYPES, acceptTypes)
+                    }
+                    putExtra(
+                        Intent.EXTRA_ALLOW_MULTIPLE,
+                        fileChooserParams.mode == FileChooserParams.MODE_OPEN_MULTIPLE,
+                    )
                 }
                 return try {
                     filePicker.launch(Intent.createChooser(pickerIntent, "选择文件"))
