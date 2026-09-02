@@ -25,6 +25,9 @@ import android.widget.HorizontalScrollView
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
+import androidx.core.content.FileProvider
+import java.io.File
 
 class WebActivity : AppCompatActivity() {
     companion object { const val EXTRA_SITE_ID = "site_id" }
@@ -36,16 +39,24 @@ class WebActivity : AppCompatActivity() {
     private val windows = mutableListOf<BrowserWindow>()
     private var activeWindow: BrowserWindow? = null
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
+    private var pendingCaptureUri: Uri? = null
     private val filePicker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val selectedUris = when {
-            result.resultCode != RESULT_OK || result.data == null -> null
+            result.resultCode != RESULT_OK -> null
             result.data?.clipData != null -> Array(result.data!!.clipData!!.itemCount) { index ->
                 result.data!!.clipData!!.getItemAt(index).uri
             }
-            else -> result.data?.data?.let { uri -> arrayOf(uri) }
+            result.data?.data != null -> arrayOf(result.data!!.data!!)
+            else -> pendingCaptureUri?.let(::arrayOf)
         }
         fileChooserCallback?.onReceiveValue(selectedUris)
         fileChooserCallback = null
+        pendingCaptureUri = null
+        if (selectedUris != null) {
+            Toast.makeText(this, "已选择 ${selectedUris.size} 个文件", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "未选择文件", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private data class BrowserWindow(val webView: WebView, var title: String)
@@ -65,21 +76,14 @@ class WebActivity : AppCompatActivity() {
         val switchSiteButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.switchSiteButton)
         val windowButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.windowButton)
         val refreshButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.refreshButton)
-        val clearCacheButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.clearCacheButton)
-        val clearLoginButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.clearLoginButton)
+        val moreButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.moreButton)
         switchSiteButton
             .setOnClickListener { showSitePicker() }
         windowButton
             .setOnClickListener { showWindowPicker() }
         refreshButton
             .setOnClickListener { activeWindow?.webView?.reload() }
-        clearCacheButton
-            .setOnClickListener { activeWindow?.webView?.let { it.clearCache(true); it.clearHistory(); it.reload() } }
-        clearLoginButton
-            .setOnClickListener {
-                CookieManager.getInstance().removeAllCookies { activeWindow?.webView?.reload() }
-                CookieManager.getInstance().flush()
-            }
+        moreButton.setOnClickListener { showMoreActions() }
 
         CookieManager.getInstance().setAcceptCookie(true)
         webViewContainer = findViewById(R.id.webViewContainer)
@@ -138,7 +142,10 @@ class WebActivity : AppCompatActivity() {
         view.webViewClient = WebViewClient()
         view.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(webView: WebView, newProgress: Int) {
-                if (activeWindow?.webView == webView) progress.progress = newProgress
+                if (activeWindow?.webView == webView) {
+                    progress.progress = newProgress
+                    renderTabs()
+                }
             }
 
             override fun onReceivedTitle(webView: WebView, title: String?) {
@@ -178,11 +185,18 @@ class WebActivity : AppCompatActivity() {
                     )
                 }
                 return try {
-                    filePicker.launch(Intent.createChooser(pickerIntent, "选择文件"))
+                    val initialIntents = if (fileChooserParams.isCaptureEnabled) captureIntents(acceptTypes) else emptyArray()
+                    filePicker.launch(Intent.createChooser(pickerIntent, "选择文件").apply {
+                        if (initialIntents.isNotEmpty()) {
+                            putExtra(Intent.EXTRA_INITIAL_INTENTS, initialIntents)
+                        }
+                    })
                     true
                 } catch (_: Exception) {
                     fileChooserCallback?.onReceiveValue(null)
                     fileChooserCallback = null
+                    pendingCaptureUri = null
+                    Toast.makeText(this@WebActivity, "无法打开文件选择器", Toast.LENGTH_SHORT).show()
                     false
                 }
             }
@@ -231,7 +245,8 @@ class WebActivity : AppCompatActivity() {
                 setOnClickListener { switchTo(window) }
             }
             val label = TextView(this).apply {
-                text = if (index == 0) window.title.take(14) else "${index + 1}. ${window.title.take(12)}"
+                val loading = window.webView.progress.takeIf { it in 1..99 }?.let { " $it%" }.orEmpty()
+                text = if (index == 0) "${window.title.take(14)}$loading" else "${index + 1}. ${window.title.take(12)}$loading"
                 setTextColor(Color.rgb(46, 71, 112))
                 textSize = 10f
                 maxLines = 1
@@ -266,6 +281,53 @@ class WebActivity : AppCompatActivity() {
                 PickerItem("窗口 ${index + 1}", window.title, window == activeWindow)
             },
         ) { index -> switchTo(windows[index]) }
+    }
+
+    private fun showMoreActions() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setItems(arrayOf("清空网页缓存", "清除登录状态")) { _, which ->
+                when (which) {
+                    0 -> confirmAction("清空网页缓存", "将清除当前网页窗口的缓存和历史记录。") {
+                        activeWindow?.webView?.let {
+                            it.clearCache(true)
+                            it.clearHistory()
+                            it.reload()
+                        }
+                    }
+                    1 -> confirmAction("清除登录状态", "将退出当前网页窗口的登录状态。") {
+                        CookieManager.getInstance().removeAllCookies { activeWindow?.webView?.reload() }
+                        CookieManager.getInstance().flush()
+                    }
+                }
+            }
+            .show()
+    }
+
+    private fun captureIntents(acceptTypes: Array<String>): Array<Intent> {
+        val acceptsImages = acceptTypes.isEmpty() || acceptTypes.any { it == "image/*" || it.startsWith("image/") }
+        val acceptsVideo = acceptTypes.any { it == "video/*" || it.startsWith("video/") }
+        val intents = mutableListOf<Intent>()
+        if (acceptsImages) {
+            val imageFile = File.createTempFile("web-upload-", ".jpg", File(cacheDir, "web_uploads").apply { mkdirs() })
+            pendingCaptureUri = FileProvider.getUriForFile(this, "$packageName.fileprovider", imageFile)
+            intents += Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE).apply {
+                putExtra(android.provider.MediaStore.EXTRA_OUTPUT, pendingCaptureUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            }
+        }
+        if (acceptsVideo) {
+            intents += Intent(android.provider.MediaStore.ACTION_VIDEO_CAPTURE)
+        }
+        return intents.toTypedArray()
+    }
+
+    private fun confirmAction(title: String, message: String, action: () -> Unit) {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setNegativeButton("取消", null)
+            .setPositiveButton("确认") { _, _ -> action() }
+            .show()
     }
 
     override fun onDestroy() {

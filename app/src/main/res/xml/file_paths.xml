@@ -1,0 +1,3 @@
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <cache-path name="web_uploads" path="web_uploads/" />
+</paths>
