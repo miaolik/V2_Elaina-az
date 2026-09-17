@@ -59,7 +59,14 @@
         <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true">
             <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
-        <activity android:name=".WebActivity" android:exported="false" android:launchMode="singleTask" />
+        <activity android:name=".WebActivity" android:exported="true" android:launchMode="singleTask">
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="pd.qq.com" />
+            </intent-filter>
+        </activity>
         <activity android:name=".SiteListActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

@@ -66,9 +66,22 @@ class WebActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_web)
-        site = SiteStore(this).sites().firstOrNull { it.id == intent.getStringExtra(EXTRA_SITE_ID) } ?: run {
-            finish(); return
+        
+        // 处理两种启动方式
+        val incomingUrl = intent.data?.toString()
+        if (incomingUrl != null) {
+            // 从外部 Deep Link 启动（如从 QQ 跳回）
+            // 尝试找到之前打开的 site，如果找不到就用默认的第一个
+            site = SiteStore(this).sites().firstOrNull() ?: run {
+                finish(); return
+            }
+        } else {
+            // 从 App 内部启动
+            site = SiteStore(this).sites().firstOrNull { it.id == intent.getStringExtra(EXTRA_SITE_ID) } ?: run {
+                finish(); return
+            }
         }
+        
         val backButton = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.backButton)
         backButton
             .setOnClickListener { onBackPressedDispatcher.onBackPressed() }
@@ -91,7 +104,10 @@ class WebActivity : AppCompatActivity() {
         windowTabScroller = findViewById(R.id.windowTabScroller)
         progress = findViewById(R.id.progress)
         applyWindowSafeAreas()
-        createWindow(site.url(), site.name)
+        
+        // 如果是从外部跳转进来，加载外部 URL；否则加载 site 的默认 URL
+        val urlToLoad = incomingUrl ?: site.url()
+        createWindow(urlToLoad, site.name)
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
