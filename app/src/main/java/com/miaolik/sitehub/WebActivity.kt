@@ -30,7 +30,11 @@ import androidx.core.content.FileProvider
 import java.io.File
 
 class WebActivity : AppCompatActivity() {
-    companion object { const val EXTRA_SITE_ID = "site_id" }
+    companion object { 
+        const val EXTRA_SITE_ID = "site_id"
+        const val UA_MOBILE = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+        const val UA_DESKTOP = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
     private lateinit var site: Site
     private lateinit var webViewContainer: FrameLayout
     private lateinit var windowTabs: LinearLayout
@@ -38,6 +42,7 @@ class WebActivity : AppCompatActivity() {
     private lateinit var progress: android.widget.ProgressBar
     private val windows = mutableListOf<BrowserWindow>()
     private var activeWindow: BrowserWindow? = null
+    private var isDesktopMode = false
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
     private var pendingCaptureUri: Uri? = null
     private val filePicker = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -326,23 +331,38 @@ class WebActivity : AppCompatActivity() {
     }
 
     private fun showMoreActions() {
+        val modeSwitch = if (isDesktopMode) "切换到手机模式" else "切换到桌面模式"
         androidx.appcompat.app.AlertDialog.Builder(this)
-            .setItems(arrayOf("清空网页缓存", "清除登录状态")) { _, which ->
+            .setItems(arrayOf(modeSwitch, "清空网页缓存", "清除登录状态")) { _, which ->
                 when (which) {
-                    0 -> confirmAction("清空网页缓存", "将清除当前网页窗口的缓存和历史记录。") {
+                    0 -> toggleUserAgent()
+                    1 -> confirmAction("清空网页缓存", "将清除当前网页窗口的缓存和历史记录。") {
                         activeWindow?.webView?.let {
                             it.clearCache(true)
                             it.clearHistory()
                             it.reload()
                         }
                     }
-                    1 -> confirmAction("清除登录状态", "将退出当前网页窗口的登录状态。") {
+                    2 -> confirmAction("清除登录状态", "将退出当前网页窗口的登录状态。") {
                         CookieManager.getInstance().removeAllCookies { activeWindow?.webView?.reload() }
                         CookieManager.getInstance().flush()
                     }
                 }
             }
             .show()
+    }
+
+    private fun toggleUserAgent() {
+        isDesktopMode = !isDesktopMode
+        activeWindow?.webView?.let { webView ->
+            webView.settings.userAgentString = if (isDesktopMode) UA_DESKTOP else UA_MOBILE
+            webView.reload()
+            Toast.makeText(
+                this,
+                if (isDesktopMode) "已切换到桌面模式" else "已切换到手机模式",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     private fun captureIntents(acceptTypes: Array<String>): Array<Intent> {
