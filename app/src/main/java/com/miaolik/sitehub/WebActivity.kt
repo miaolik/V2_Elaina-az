@@ -14,8 +14,6 @@ import android.webkit.CookieManager
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.webkit.WebResourceRequest
-import android.webkit.WebResourceError
 import android.webkit.ValueCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.OnBackPressedCallback
@@ -149,9 +147,8 @@ class WebActivity : AppCompatActivity() {
         
         val window = BrowserWindow(view, initialTitle)
         view.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                val url = request.url.toString()
-                
+            @Suppress("DEPRECATION")
+            override fun shouldOverrideUrlLoading(view: WebView, url: String): Boolean {
                 // 处理第三方应用链接
                 if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("about:") && !url.startsWith("file://")) {
                     return try {
