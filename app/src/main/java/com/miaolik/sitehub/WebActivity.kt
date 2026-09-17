@@ -138,8 +138,53 @@ class WebActivity : AppCompatActivity() {
         view.settings.setSupportZoom(true)
         view.settings.javaScriptCanOpenWindowsAutomatically = true
         view.settings.setSupportMultipleWindows(true)
+        
+        // 修复 ERR_CACHE_MISS 错误
+        view.settings.cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
+        view.settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+        view.settings.allowFileAccess = true
+        view.settings.allowContentAccess = true
+        
         val window = BrowserWindow(view, initialTitle)
-        view.webViewClient = WebViewClient()
+        view.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView, request: android.webkit.WebResourceRequest): Boolean {
+                val url = request.url.toString()
+                
+                // 处理第三方应用链接
+                if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("about:") && !url.startsWith("file://")) {
+                    return try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(intent)
+                        true
+                    } catch (e: Exception) {
+                        Toast.makeText(this@WebActivity, "无法打开第三方应用: ${e.message}", Toast.LENGTH_SHORT).show()
+                        false
+                    }
+                }
+                
+                // 对于普通 HTTP/HTTPS 链接，让 WebView 正常加载
+                return false
+            }
+            
+            override fun onReceivedError(view: WebView, request: android.webkit.WebResourceRequest, error: android.webkit.WebResourceError) {
+                super.onReceivedError(view, request, error)
+                // 如果是主frame的错误，显示错误信息
+                if (request.isForMainFrame) {
+                    val errorCode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                        error.errorCode
+                    } else {
+                        -1
+                    }
+                    val description = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                        error.description
+                    } else {
+                        "加载错误"
+                    }
+                    Toast.makeText(this@WebActivity, "页面加载失败: $description", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
         view.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(webView: WebView, newProgress: Int) {
                 if (activeWindow?.webView == webView) {
