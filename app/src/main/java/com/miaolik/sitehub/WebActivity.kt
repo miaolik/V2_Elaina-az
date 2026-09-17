@@ -173,13 +173,8 @@ class WebActivity : AppCompatActivity() {
                 super.onReceivedError(view, request, error)
                 // 如果是主frame的错误，显示错误信息
                 if (request.isForMainFrame) {
-                    val errorCode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                        error.errorCode
-                    } else {
-                        -1
-                    }
                     val description = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                        error.description
+                        error.description.toString()
                     } else {
                         "加载错误"
                     }
