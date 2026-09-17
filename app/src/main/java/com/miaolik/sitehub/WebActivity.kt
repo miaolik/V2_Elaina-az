@@ -149,7 +149,7 @@ class WebActivity : AppCompatActivity() {
         
         val window = BrowserWindow(view, initialTitle)
         view.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView, request: android.webkit.WebResourceRequest): Boolean {
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val url = request.url.toString()
                 
                 // 处理第三方应用链接
@@ -167,19 +167,6 @@ class WebActivity : AppCompatActivity() {
                 
                 // 对于普通 HTTP/HTTPS 链接，让 WebView 正常加载
                 return false
-            }
-            
-            override fun onReceivedError(view: WebView, request: android.webkit.WebResourceRequest, error: android.webkit.WebResourceError) {
-                super.onReceivedError(view, request, error)
-                // 如果是主frame的错误，显示错误信息
-                if (request.isForMainFrame) {
-                    val description = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                        error.description.toString()
-                    } else {
-                        "加载错误"
-                    }
-                    Toast.makeText(this@WebActivity, "页面加载失败: $description", Toast.LENGTH_SHORT).show()
-                }
             }
         }
         view.webChromeClient = object : WebChromeClient() {
