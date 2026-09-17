@@ -160,6 +160,9 @@ class WebActivity : AppCompatActivity() {
         view.settings.javaScriptCanOpenWindowsAutomatically = true
         view.settings.setSupportMultipleWindows(true)
         
+        // 设置 User-Agent（根据当前模式）
+        view.settings.userAgentString = if (isDesktopMode) UA_DESKTOP else UA_MOBILE
+        
         // 修复 ERR_CACHE_MISS 错误
         view.settings.cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
         view.settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
@@ -354,15 +357,21 @@ class WebActivity : AppCompatActivity() {
 
     private fun toggleUserAgent() {
         isDesktopMode = !isDesktopMode
-        activeWindow?.webView?.let { webView ->
-            webView.settings.userAgentString = if (isDesktopMode) UA_DESKTOP else UA_MOBILE
-            webView.reload()
-            Toast.makeText(
-                this,
-                if (isDesktopMode) "已切换到桌面模式" else "已切换到手机模式",
-                Toast.LENGTH_SHORT
-            ).show()
+        val newUA = if (isDesktopMode) UA_DESKTOP else UA_MOBILE
+        
+        // 更新所有窗口的 User-Agent
+        windows.forEach { window ->
+            window.webView.settings.userAgentString = newUA
         }
+        
+        // 重新加载当前窗口
+        activeWindow?.webView?.reload()
+        
+        Toast.makeText(
+            this,
+            if (isDesktopMode) "已切换到桌面模式" else "已切换到手机模式",
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     private fun captureIntents(acceptTypes: Array<String>): Array<Intent> {
