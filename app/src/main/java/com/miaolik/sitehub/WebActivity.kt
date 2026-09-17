@@ -139,7 +139,27 @@ class WebActivity : AppCompatActivity() {
         view.settings.javaScriptCanOpenWindowsAutomatically = true
         view.settings.setSupportMultipleWindows(true)
         val window = BrowserWindow(view, initialTitle)
-        view.webViewClient = WebViewClient()
+        view.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView, request: android.webkit.WebResourceRequest): Boolean {
+                val url = request.url.toString()
+                
+                // 处理第三方应用链接
+                if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("about:")) {
+                    return try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(intent)
+                        true
+                    } catch (e: Exception) {
+                        Toast.makeText(this@WebActivity, "无法打开第三方应用: ${e.message}", Toast.LENGTH_SHORT).show()
+                        false
+                    }
+                }
+                
+                // 对于普通 HTTP/HTTPS 链接，让 WebView 正常加载
+                return false
+            }
+        }
         view.webChromeClient = object : WebChromeClient() {
             override fun onProgressChanged(webView: WebView, newProgress: Int) {
                 if (activeWindow?.webView == webView) {
